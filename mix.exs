@@ -29,7 +29,9 @@ defmodule CouchbaseEx.MixProject do
 
   defp deps do
     [
+      {:dotenvy, "~> 0.8"},
       {:jason, "~> 1.4"},
+      {:nimble_options, "~> 1.1"},
       {:zigler, "~> 0.11", optional: true},
       {:mox, "~> 1.0", only: :test},
       {:ex_doc, "~> 0.27", only: :dev, runtime: false},

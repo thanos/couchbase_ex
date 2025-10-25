@@ -1,7 +1,8 @@
 import Config
 
+# Helper functions for parsing environment variables
 get_int_env = fn var, default ->
-  case Integer.parse(System.get_env(var, default)) do
+  case Integer.parse(System.get_env(var, to_string(default))) do
     {i, ""} -> i
     _ -> default
   end
@@ -31,6 +32,6 @@ config :couchbase_ex,
 # Zig server configuration
 config :couchbase_ex,
   zig_server: [
-    executable_path: System.get_env("COUCHBASE_ZIG_SERVER_PATH"),
-    build_on_startup: System.get_env("COUCHBASE_BUILD_ZIG_SERVER", "false") == "true"
+    executable_path: System.get_env("COUCHBASE_ZIG_SERVER_PATH", "priv/bin/couchbase_zig_server"),
+    build_on_startup: get_bool_env.("COUCHBASE_BUILD_ZIG_SERVER_ON_STARTUP", false)
   ]
