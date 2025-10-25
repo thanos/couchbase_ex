@@ -6,7 +6,6 @@ defmodule CouchbaseEx.Options do
   for all Couchbase operations, with sensible defaults and validation using nimble_options.
   """
 
-  # No need for use NimbleOptions, we'll use it directly
 
   @type t :: %__MODULE__{
           bucket: String.t(),

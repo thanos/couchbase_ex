@@ -65,6 +65,8 @@ defmodule CouchbaseEx.Client do
     end
   end
 
+  @doc false
+  # Internal helper that performs the actual connection after options validation.
   defp connect_with_options(connection_string, username, password, options) do
     with :ok <- validate_connection_params(connection_string, username, password),
          {:ok, port_pid} <- PortManager.start_link(connection_string, username, password, options) do
@@ -550,15 +552,10 @@ defmodule CouchbaseEx.Client do
         timestamp: System.monotonic_time(:millisecond)
       }
 
-      with {:ok, response} <- PortManager.send_command(client.port, message) do
-        case response do
-          %{"success" => true, "data" => data} -> {:ok, data}
-          %{"success" => false, "error" => error} -> {:error, Error.from_map(error)}
-          _ -> {:error, Error.new(:invalid_response, "Unexpected response format")}
-        end
-      else
-        {:error, reason} ->
-          {:error, Error.new(:communication_failed, to_string(reason))}
+      case PortManager.send_command(client.port, message) do
+        {:ok, %{"success" => true, "data" => data} } -> {:ok, data}
+        {:ok, %{"success" => false, "error" => error} } -> {:error, Error.from_map(error)}
+        {:error, reason} -> {:error, Error.new(:communication_failed, to_string(reason))}
       end
     end
   end
