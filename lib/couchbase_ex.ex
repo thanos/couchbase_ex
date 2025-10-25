@@ -83,7 +83,7 @@ defmodule CouchbaseEx do
   ## Examples
 
       {:ok, client} = CouchbaseEx.connect("couchbase://localhost", "Administrator", "password")
-      {:ok, client} = CouchbaseEx.connect("couchbase://localhost", "Administrator", "password", 
+      {:ok, client} = CouchbaseEx.connect("couchbase://localhost", "Administrator", "password",
         bucket: "my_bucket", timeout: 10000)
 
   """
