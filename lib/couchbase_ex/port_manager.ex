@@ -215,6 +215,7 @@ defmodule CouchbaseEx.PortManager do
       Port.close(state.port)
     end
 
+
     # Reply to all pending requests with error
     Enum.each(state.pending_requests, fn {_request_id, from} ->
       GenServer.reply(from, {:error, Error.new(:server_terminated, "Server terminated")})
