@@ -55,7 +55,6 @@ defmodule CouchbaseEx.Error do
     reason =
       error_map
       |> Map.get("code", "UNKNOWN_ERROR")
-      |> String.downcase()
       |> zig_to_elixir_reason()
 
     message = Map.get(error_map, "message", "Unknown error occurred")

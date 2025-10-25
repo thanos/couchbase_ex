@@ -501,7 +501,7 @@ defmodule CouchbaseEx.Client do
 
   @spec send_command(t(), String.t(), map()) :: {:ok, any()} | {:error, Error.t()}
   defp send_command(client, command, params) do
-    if client.port == nil do
+    if is_nil(client.port) do
       {:error, Error.new(:not_connected, "Client not connected to Couchbase")}
     else
       message = %{
