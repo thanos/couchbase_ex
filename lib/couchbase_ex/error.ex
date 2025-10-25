@@ -56,8 +56,7 @@ defmodule CouchbaseEx.Error do
       error_map
       |> Map.get("code", "UNKNOWN_ERROR")
       |> String.downcase()
-      |> String.replace("_", "_")
-      |> String.to_atom()
+      |> zig_to_elixir_reason()
 
     message = Map.get(error_map, "message", "Unknown error occurred")
     details = Map.get(error_map, "details", %{})

@@ -184,15 +184,28 @@ defmodule CouchbaseEx.Options do
   @spec merge(t(), t()) :: t()
   def merge(%__MODULE__{} = options1, %__MODULE__{} = options2) do
     %__MODULE__{
-      bucket: options2.bucket || options1.bucket,
-      timeout: options2.timeout || options1.timeout,
-      expiry: options2.expiry || options1.expiry,
-      durability: options2.durability || options1.durability,
-      params: options2.params || options1.params,
-      pool_size: options2.pool_size || options1.pool_size,
-      connection_timeout: options2.connection_timeout || options1.connection_timeout,
-      query_timeout: options2.query_timeout || options1.query_timeout,
-      operation_timeout: options2.operation_timeout || options1.operation_timeout
+      bucket: if(is_nil(options2.bucket), do: options1.bucket, else: options2.bucket),
+      timeout: if(is_nil(options2.timeout), do: options1.timeout, else: options2.timeout),
+      expiry: if(is_nil(options2.expiry), do: options1.expiry, else: options2.expiry),
+      durability:
+        if(is_nil(options2.durability), do: options1.durability, else: options2.durability),
+      params: if(is_nil(options2.params), do: options1.params, else: options2.params),
+      pool_size: if(is_nil(options2.pool_size), do: options1.pool_size, else: options2.pool_size),
+      connection_timeout:
+        if(is_nil(options2.connection_timeout),
+          do: options1.connection_timeout,
+          else: options2.connection_timeout
+        ),
+      query_timeout:
+        if(is_nil(options2.query_timeout),
+          do: options1.query_timeout,
+          else: options2.query_timeout
+        ),
+      operation_timeout:
+        if(is_nil(options2.operation_timeout),
+          do: options1.operation_timeout,
+          else: options2.operation_timeout
+        )
     }
   end
 

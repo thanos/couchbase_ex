@@ -8,7 +8,7 @@ defmodule CouchbaseEx.PortManager do
 
   use GenServer
 
-  alias CouchbaseEx.{Error, Options, Config}
+  alias CouchbaseEx.{Error, Options}
 
   require Logger
 
