@@ -51,6 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Configuration System
 - Environment variable configuration support
+- `.env` file support with `dotenvy` library
+- Environment-specific `.env` files (`.env.dev`, `.env.test`, `.env.prod`)
+- Local override files (`.env.{environment}.local`)
 - Runtime configuration with `config/runtime.exs`
 - Development configuration with `config/dev.exs`
 - Test configuration with `config/test.exs`
@@ -108,7 +111,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `COUCHBASE_PASSWORD` - Password for authentication
 - `COUCHBASE_BUCKET` - Default bucket name
 - `COUCHBASE_TIMEOUT` - Default operation timeout
+- `COUCHBASE_CONNECTION_TIMEOUT` - Connection establishment timeout
+- `COUCHBASE_QUERY_TIMEOUT` - N1QL query timeout
+- `COUCHBASE_OPERATION_TIMEOUT` - Individual operation timeout
 - `COUCHBASE_POOL_SIZE` - Connection pool size
+- `COUCHBASE_ZIG_SERVER_PATH` - Path to Zig server executable
+- `COUCHBASE_BUILD_ZIG_SERVER_ON_STARTUP` - Whether to build Zig server on startup
 
 ### Configuration Files
 - `config/config.exs` - Base configuration

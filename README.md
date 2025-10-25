@@ -50,7 +50,9 @@ CouchbaseEx.close(client)
 
 ### Environment Variables
 
-You can configure the client using environment variables:
+You can configure the client using environment variables. The client supports both direct environment variables and `.env` files using the `dotenvy` library.
+
+#### Direct Environment Variables
 
 ```bash
 export COUCHBASE_HOST="couchbase://localhost"
@@ -60,6 +62,35 @@ export COUCHBASE_BUCKET="default"
 export COUCHBASE_TIMEOUT="5000"
 export COUCHBASE_POOL_SIZE="10"
 ```
+
+#### .env Files
+
+Create a `.env` file in your project root:
+
+```bash
+# Copy the example file
+cp env.example .env
+
+# Edit with your values
+COUCHBASE_HOST=couchbase://localhost
+COUCHBASE_USER=Administrator
+COUCHBASE_PASSWORD=password
+COUCHBASE_BUCKET=default
+COUCHBASE_TIMEOUT=5000
+COUCHBASE_CONNECTION_TIMEOUT=10000
+COUCHBASE_QUERY_TIMEOUT=30000
+COUCHBASE_OPERATION_TIMEOUT=5000
+COUCHBASE_POOL_SIZE=10
+COUCHBASE_ZIG_SERVER_PATH=priv/bin/couchbase_zig_server
+COUCHBASE_BUILD_ZIG_SERVER_ON_STARTUP=true
+```
+
+The client will automatically load `.env` files in the following order:
+- `.env`
+- `.env.{environment}` (e.g., `.env.dev`, `.env.test`, `.env.prod`)
+- `.env.{environment}.local` (e.g., `.env.dev.local`)
+
+This allows you to have environment-specific configurations while keeping sensitive values in `.local` files that are typically gitignored.
 
 ### Configuration Files
 
