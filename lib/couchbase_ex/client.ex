@@ -57,43 +57,45 @@ defmodule CouchbaseEx.Client do
   @spec connect(String.t(), String.t(), String.t(), keyword()) ::
           {:ok, t()} | {:error, Error.t()}
   def connect(connection_string, username, password, opts \\ []) do
-    options = Options.new(opts)
+    case Options.new(opts) do
+      {:ok, options} ->
+        connect_with_options(connection_string, username, password, options)
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
+  end
 
-    # Validate connection parameters before attempting to start PortManager
-    case validate_connection_params(connection_string, username, password) do
-      :ok ->
-        case PortManager.start_link(connection_string, username, password, options) do
-          {:ok, port_pid} ->
-            client = %__MODULE__{
-              port: port_pid,
-              connection_string: connection_string,
-              username: username,
-              password: password,
-              bucket: options.bucket,
-              timeout: options.timeout,
-              pool_size: options.pool_size,
-              ref_counter: :counters.new(1, [:atomics])
-            }
+  @doc false
+  # Internal helper that performs the actual connection after options validation.
+  defp connect_with_options(connection_string, username, password, options) do
+    with :ok <- validate_connection_params(connection_string, username, password),
+         {:ok, port_pid} <- PortManager.start_link(connection_string, username, password, options) do
+      client = %__MODULE__{
+        port: port_pid,
+        connection_string: connection_string,
+        username: username,
+        password: password,
+        bucket: options.bucket,
+        timeout: options.timeout,
+        pool_size: options.pool_size,
+        ref_counter: :counters.new(1, [:atomics])
+      }
 
-            # Initialize connection
-            case send_command(client, "connect", %{
-                   connection_string: connection_string,
-                   username: username,
-                   password: password,
-                   bucket: options.bucket,
-                   timeout: options.timeout
-                 }) do
-              {:ok, _} -> {:ok, client}
-              {:error, reason} -> {:error, reason}
-            end
-
-          {:error, reason} ->
-            error_message = if is_binary(reason), do: reason, else: inspect(reason)
-            {:error, Error.new(:connection_failed, error_message)}
-        end
-
+      # Initialize connection
+      case send_command(client, "connect", %{
+             connection_string: connection_string,
+             username: username,
+             password: password,
+             bucket: options.bucket,
+             timeout: options.timeout
+           }) do
+        {:ok, _} -> {:ok, client}
+        {:error, reason} -> {:error, reason}
+      end
+    else
       {:error, reason} ->
-        {:error, Error.new(:invalid_connection_params, reason)}
+        error_message = if is_binary(reason), do: reason, else: inspect(reason)
+        {:error, Error.new(:connection_failed, error_message)}
     end
   end
 
@@ -138,8 +140,12 @@ defmodule CouchbaseEx.Client do
   """
   @spec get(t(), String.t(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def get(client, key, opts \\ []) do
-    options = Options.new(opts)
-    send_command(client, "get", %{key: key, timeout: options.timeout})
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "get", %{key: key, timeout: options.timeout})
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -165,15 +171,18 @@ defmodule CouchbaseEx.Client do
   """
   @spec set(t(), String.t(), any(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def set(client, key, value, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "set", %{
-      key: key,
-      value: value,
-      expiry: options.expiry,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "set", %{
+          key: key,
+          value: value,
+          expiry: options.expiry,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -198,15 +207,18 @@ defmodule CouchbaseEx.Client do
   """
   @spec insert(t(), String.t(), any(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def insert(client, key, value, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "insert", %{
-      key: key,
-      value: value,
-      expiry: options.expiry,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "insert", %{
+          key: key,
+          value: value,
+          expiry: options.expiry,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -231,15 +243,18 @@ defmodule CouchbaseEx.Client do
   """
   @spec replace(t(), String.t(), any(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def replace(client, key, value, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "replace", %{
-      key: key,
-      value: value,
-      expiry: options.expiry,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "replace", %{
+          key: key,
+          value: value,
+          expiry: options.expiry,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -264,15 +279,18 @@ defmodule CouchbaseEx.Client do
   """
   @spec upsert(t(), String.t(), any(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def upsert(client, key, value, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "upsert", %{
-      key: key,
-      value: value,
-      expiry: options.expiry,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "upsert", %{
+          key: key,
+          value: value,
+          expiry: options.expiry,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -296,13 +314,16 @@ defmodule CouchbaseEx.Client do
   """
   @spec delete(t(), String.t(), keyword()) :: {:ok, any()} | {:error, Error.t()}
   def delete(client, key, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "delete", %{
-      key: key,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "delete", %{
+          key: key,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -326,8 +347,12 @@ defmodule CouchbaseEx.Client do
   """
   @spec exists(t(), String.t(), keyword()) :: {:ok, boolean()} | {:error, Error.t()}
   def exists(client, key, opts \\ []) do
-    options = Options.new(opts)
-    send_command(client, "exists", %{key: key, timeout: options.timeout})
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "exists", %{key: key, timeout: options.timeout})
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -353,13 +378,16 @@ defmodule CouchbaseEx.Client do
   """
   @spec query(t(), String.t(), keyword()) :: {:ok, list()} | {:error, Error.t()}
   def query(client, statement, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "query", %{
-      statement: statement,
-      params: options.params,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "query", %{
+          statement: statement,
+          params: options.params,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -385,13 +413,16 @@ defmodule CouchbaseEx.Client do
   """
   @spec lookup_in(t(), String.t(), list(), keyword()) :: {:ok, list()} | {:error, Error.t()}
   def lookup_in(client, key, specs, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "lookup_in", %{
-      key: key,
-      specs: specs,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "lookup_in", %{
+          key: key,
+          specs: specs,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -417,15 +448,18 @@ defmodule CouchbaseEx.Client do
   """
   @spec mutate_in(t(), String.t(), list(), keyword()) :: {:ok, list()} | {:error, Error.t()}
   def mutate_in(client, key, specs, opts \\ []) do
-    options = Options.new(opts)
-
-    send_command(client, "mutate_in", %{
-      key: key,
-      specs: specs,
-      expiry: options.expiry,
-      durability: options.durability,
-      timeout: options.timeout
-    })
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "mutate_in", %{
+          key: key,
+          specs: specs,
+          expiry: options.expiry,
+          durability: options.durability,
+          timeout: options.timeout
+        })
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -448,8 +482,12 @@ defmodule CouchbaseEx.Client do
   """
   @spec ping(t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def ping(client, opts \\ []) do
-    options = Options.new(opts)
-    send_command(client, "ping", %{timeout: options.timeout})
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "ping", %{timeout: options.timeout})
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   @doc """
@@ -472,8 +510,12 @@ defmodule CouchbaseEx.Client do
   """
   @spec diagnostics(t(), keyword()) :: {:ok, map()} | {:error, Error.t()}
   def diagnostics(client, opts \\ []) do
-    options = Options.new(opts)
-    send_command(client, "diagnostics", %{timeout: options.timeout})
+    case Options.new(opts) do
+      {:ok, options} ->
+        send_command(client, "diagnostics", %{timeout: options.timeout})
+      {:error, error} ->
+        {:error, Error.new(:invalid_options, "Invalid options: #{inspect(error)}")}
+    end
   end
 
   # Private functions
@@ -511,15 +553,9 @@ defmodule CouchbaseEx.Client do
       }
 
       case PortManager.send_command(client.port, message) do
-        {:ok, response} ->
-          case response do
-            %{"success" => true, "data" => data} -> {:ok, data}
-            %{"success" => false, "error" => error} -> {:error, Error.from_map(error)}
-            _ -> {:error, Error.new(:invalid_response, "Unexpected response format")}
-          end
-
-        {:error, reason} ->
-          {:error, Error.new(:communication_failed, to_string(reason))}
+        {:ok, %{"success" => true, "data" => data} } -> {:ok, data}
+        {:ok, %{"success" => false, "error" => error} } -> {:error, Error.from_map(error)}
+        {:error, reason} -> {:error, Error.new(:communication_failed, to_string(reason))}
       end
     end
   end

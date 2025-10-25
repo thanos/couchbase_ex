@@ -45,7 +45,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
 
   describe "Options module" do
     test "creates options with defaults" do
-      options = Options.new()
+      {:ok, options} = Options.new()
 
       assert options.bucket == "default"
       assert options.timeout == 5000
@@ -65,7 +65,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
         pool_size: 20
       ]
 
-      options = Options.new(opts)
+      {:ok, options} = Options.new(opts)
 
       assert options.bucket == "my_bucket"
       assert options.timeout == 10_000
@@ -84,7 +84,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
         pool_size: 10
       }
 
-      assert Options.validate(options) == :ok
+      assert Options.validate_struct(options) == :ok
     end
 
     test "validates invalid options" do
@@ -96,7 +96,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
         pool_size: 0
       }
 
-      assert {:error, errors} = Options.validate(options)
+      assert {:error, errors} = Options.validate_struct(options)
       refute Enum.empty?(errors)
     end
 
