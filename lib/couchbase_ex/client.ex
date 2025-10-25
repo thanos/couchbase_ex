@@ -91,9 +91,6 @@ defmodule CouchbaseEx.Client do
         {:error, reason} -> {:error, reason}
       end
     else
-      {:error, reason} when is_binary(reason) ->
-        {:error, Error.new(:invalid_connection_params, reason)}
-
       {:error, reason} ->
         error_message = if is_binary(reason), do: reason, else: inspect(reason)
         {:error, Error.new(:connection_failed, error_message)}

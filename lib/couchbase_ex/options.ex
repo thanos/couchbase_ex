@@ -104,8 +104,6 @@ defmodule CouchbaseEx.Options do
     opts = Keyword.put_new(opts, :bucket, get_default_bucket())
     with {:ok, validated_opts} <- validate(opts) do
       {:ok, struct(__MODULE__, validated_opts)}
-    else
-      {:error, error} -> {:error, error}
     end
   end
   @doc """
