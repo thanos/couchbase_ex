@@ -8,7 +8,7 @@ get_int_env = fn var, default ->
 end
 
 get_bool_env = fn var, default ->
-  case System.get_env(var, default) do
+  case System.get_env(var, to_string(default)) do
     "true" -> true
     "false" -> false
     _ -> default
