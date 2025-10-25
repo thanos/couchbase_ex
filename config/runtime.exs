@@ -1,5 +1,20 @@
 import Config
 
+get_int_env = fn var, default ->
+  case Integer.parse(System.get_env(var, default)) do
+    {i, ""} -> i
+    _ -> default
+  end
+end
+
+get_bool_env = fn var, default ->
+  case System.get_env(var, default) do
+    "true" -> true
+    "false" -> false
+    _ -> default
+  end
+end
+
 # Couchbase connection configuration
 # These can be overridden by environment variables
 config :couchbase_ex,
@@ -7,12 +22,11 @@ config :couchbase_ex,
   username: System.get_env("COUCHBASE_USER", "Administrator"),
   password: System.get_env("COUCHBASE_PASSWORD", "password"),
   bucket: System.get_env("COUCHBASE_BUCKET", "default"),
-  timeout: System.get_env("COUCHBASE_TIMEOUT", "5000") |> String.to_integer(),
-  pool_size: System.get_env("COUCHBASE_POOL_SIZE", "10") |> String.to_integer(),
-  connection_timeout:
-    System.get_env("COUCHBASE_CONNECTION_TIMEOUT", "10000") |> String.to_integer(),
-  query_timeout: System.get_env("COUCHBASE_QUERY_TIMEOUT", "30000") |> String.to_integer(),
-  operation_timeout: System.get_env("COUCHBASE_OPERATION_TIMEOUT", "5000") |> String.to_integer()
+  timeout: get_int_env.("COUCHBASE_TIMEOUT", 5000),
+  pool_size: get_int_env.("COUCHBASE_POOL_SIZE", 20),
+  connection_timeout: get_int_env.("COUCHBASE_CONNECTION_TIMEOUT", 15000),
+  query_timeout: get_int_env.("COUCHBASE_QUERY_TIMEOUT", 60000),
+  operation_timeout: get_int_env.("COUCHBASE_OPERATION_TIMEOUT", 10000)
 
 # Zig server configuration
 config :couchbase_ex,

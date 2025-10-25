@@ -519,7 +519,7 @@ defmodule CouchbaseEx.Client do
           end
 
         {:error, reason} ->
-          {:error, Error.new(:communication_failed, reason)}
+          {:error, Error.new(:communication_failed, to_string(reason))}
       end
     end
   end
