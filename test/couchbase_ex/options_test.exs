@@ -5,7 +5,7 @@ defmodule CouchbaseEx.OptionsTest do
 
   describe "Options.new/1" do
     test "creates options with defaults" do
-      options = Options.new()
+      {:ok, options} = Options.new()
 
       assert options.bucket == "default"
       assert options.timeout == 5000
@@ -25,7 +25,7 @@ defmodule CouchbaseEx.OptionsTest do
         pool_size: 20
       ]
 
-      options = Options.new(opts)
+      {:ok, options} = Options.new(opts)
 
       assert options.bucket == "my_bucket"
       assert options.timeout == 10_000

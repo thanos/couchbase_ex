@@ -98,15 +98,16 @@ defmodule CouchbaseEx.Options do
       Options.new([expiry: 3600, durability: :majority])
 
   """
-  @spec new(keyword()) :: t()
+  @spec new(keyword()) :: {:ok, t()} | {:error, NimbleOptions.ValidationError.t()}
   def new(opts \\ []) do
     # Merge with environment variables for bucket default
     opts = Keyword.put_new(opts, :bucket, get_default_bucket())
-
-    validated_opts = validate!(opts)
-    struct(__MODULE__, validated_opts)
+    with {:ok, validated_opts} <- validate(opts) do
+      {:ok, struct(__MODULE__, validated_opts)}
+    else
+      {:error, error} -> {:error, error}
+    end
   end
-
   @doc """
   Creates a new Options struct with the given keyword list, raising on error.
 
