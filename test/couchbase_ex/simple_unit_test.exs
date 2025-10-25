@@ -84,7 +84,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
         pool_size: 10
       }
 
-      assert Options.validate(options) == :ok
+      assert Options.validate_struct(options) == :ok
     end
 
     test "validates invalid options" do
@@ -96,7 +96,7 @@ defmodule CouchbaseEx.SimpleUnitTest do
         pool_size: 0
       }
 
-      assert {:error, errors} = Options.validate(options)
+      assert {:error, errors} = Options.validate_struct(options)
       refute Enum.empty?(errors)
     end
 

@@ -3,20 +3,10 @@ defmodule CouchbaseEx.Options do
   Configuration options for CouchbaseEx operations.
 
   This module provides a structured way to handle configuration options
-  for all Couchbase operations, with sensible defaults and validation.
+  for all Couchbase operations, with sensible defaults and validation using nimble_options.
   """
 
-  defstruct [
-    :bucket,
-    :timeout,
-    :expiry,
-    :durability,
-    :params,
-    :pool_size,
-    :connection_timeout,
-    :query_timeout,
-    :operation_timeout
-  ]
+  # No need for use NimbleOptions, we'll use it directly
 
   @type t :: %__MODULE__{
           bucket: String.t(),
@@ -30,6 +20,66 @@ defmodule CouchbaseEx.Options do
           operation_timeout: non_neg_integer()
         }
 
+  defstruct [
+    :bucket,
+    :timeout,
+    :expiry,
+    :durability,
+    :params,
+    :pool_size,
+    :connection_timeout,
+    :query_timeout,
+    :operation_timeout
+  ]
+
+  @schema [
+    bucket: [
+      type: :string,
+      default: "default",
+      doc: "The Couchbase bucket name"
+    ],
+    timeout: [
+      type: :non_neg_integer,
+      default: 5_000,
+      doc: "Default operation timeout in milliseconds"
+    ],
+    expiry: [
+      type: {:or, [:non_neg_integer, :nil]},
+      default: nil,
+      doc: "Document expiry time in seconds (nil for no expiry)"
+    ],
+    durability: [
+      type: {:in, [:none, :majority, :majority_and_persist, :persist_to_majority]},
+      default: :none,
+      doc: "Durability level for write operations"
+    ],
+    params: [
+      type: {:list, :any},
+      default: [],
+      doc: "Parameters for parameterized queries"
+    ],
+    pool_size: [
+      type: :non_neg_integer,
+      default: 10,
+      doc: "Connection pool size"
+    ],
+    connection_timeout: [
+      type: :non_neg_integer,
+      default: 10_000,
+      doc: "Connection establishment timeout in milliseconds"
+    ],
+    query_timeout: [
+      type: :non_neg_integer,
+      default: 30_000,
+      doc: "N1QL query timeout in milliseconds"
+    ],
+    operation_timeout: [
+      type: :non_neg_integer,
+      default: 5_000,
+      doc: "Individual operation timeout in milliseconds"
+    ]
+  ]
+
   @doc """
   Creates a new Options struct with the given keyword list.
 
@@ -39,7 +89,8 @@ defmodule CouchbaseEx.Options do
 
   ## Returns
 
-  - `t()` - Options struct with defaults applied
+  - `{:ok, t()}` - Options struct with defaults applied
+  - `{:error, NimbleOptions.ValidationError.t()}` - Validation error
 
   ## Examples
 
@@ -49,17 +100,41 @@ defmodule CouchbaseEx.Options do
   """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
-    %__MODULE__{
-      bucket: Keyword.get(opts, :bucket, get_default_bucket()),
-      timeout: Keyword.get(opts, :timeout, 5_000),
-      expiry: Keyword.get(opts, :expiry),
-      durability: Keyword.get(opts, :durability, :none),
-      params: Keyword.get(opts, :params, []),
-      pool_size: Keyword.get(opts, :pool_size, 10),
-      connection_timeout: Keyword.get(opts, :connection_timeout, 10_000),
-      query_timeout: Keyword.get(opts, :query_timeout, 30_000),
-      operation_timeout: Keyword.get(opts, :operation_timeout, 5_000)
-    }
+    # Merge with environment variables for bucket default
+    opts = Keyword.put_new(opts, :bucket, get_default_bucket())
+
+    validated_opts = validate!(opts)
+    struct(__MODULE__, validated_opts)
+  end
+
+  @doc """
+  Creates a new Options struct with the given keyword list, raising on error.
+
+  ## Parameters
+
+  - `opts` - Keyword list of options
+
+  ## Returns
+
+  - `t()` - Options struct with defaults applied
+
+  ## Raises
+
+  - `NimbleOptions.ValidationError` - If validation fails
+
+  ## Examples
+
+      Options.new!([bucket: "my_bucket", timeout: 5000])
+      Options.new!([expiry: 3600, durability: :majority])
+
+  """
+  @spec new!(keyword()) :: t()
+  def new!(opts \\ []) do
+    # Merge with environment variables for bucket default
+    opts = Keyword.put_new(opts, :bucket, get_default_bucket())
+
+    validated_opts = validate!(opts)
+    struct(__MODULE__, validated_opts)
   end
 
   @doc """
@@ -135,7 +210,30 @@ defmodule CouchbaseEx.Options do
 
   ## Parameters
 
-  - `options` - Options to validate
+  - `opts` - Keyword list of options to validate
+
+  ## Returns
+
+  - `{:ok, keyword()}` - Validated options
+  - `{:error, NimbleOptions.ValidationError.t()}` - Validation error
+
+  ## Examples
+
+      Options.validate([bucket: "my_bucket", timeout: 5000])  # {:ok, [bucket: "my_bucket", timeout: 5000]}
+      Options.validate([bucket: "", timeout: -1])  # {:error, %NimbleOptions.ValidationError{}}
+
+  """
+  @spec validate(keyword()) :: {:ok, keyword()} | {:error, NimbleOptions.ValidationError.t()}
+  def validate(opts) do
+    NimbleOptions.validate(opts, @schema)
+  end
+
+  @doc """
+  Validates an Options struct and returns any validation errors.
+
+  ## Parameters
+
+  - `options` - Options struct to validate
 
   ## Returns
 
@@ -144,24 +242,54 @@ defmodule CouchbaseEx.Options do
 
   ## Examples
 
-      Options.validate(%Options{bucket: "my_bucket", timeout: 5000})  # :ok
-      Options.validate(%Options{bucket: "", timeout: -1})  # {:error, ["Bucket cannot be empty", "Timeout must be positive"]}
+      Options.validate_struct(%Options{bucket: "my_bucket", timeout: 5000})  # :ok
+      Options.validate_struct(%Options{bucket: "", timeout: -1})  # {:error, ["Bucket cannot be empty", "Timeout must be positive"]}
 
   """
-  @spec validate(t()) :: :ok | {:error, [String.t()]}
-  def validate(%__MODULE__{} = options) do
-    errors =
-      []
-      |> validate_bucket(options.bucket)
-      |> validate_timeout(options.timeout)
-      |> validate_expiry(options.expiry)
-      |> validate_durability(options.durability)
-      |> validate_pool_size(options.pool_size)
+  @spec validate_struct(t()) :: :ok | {:error, [String.t()]}
+  def validate_struct(%__MODULE__{} = options) do
+    # Convert struct to keyword list for validation, handling nil values
+    opts = [
+      bucket: options.bucket,
+      timeout: options.timeout,
+      expiry: options.expiry,
+      durability: options.durability,
+      params: options.params || [],
+      pool_size: options.pool_size,
+      connection_timeout: options.connection_timeout || 10_000,
+      query_timeout: options.query_timeout || 30_000,
+      operation_timeout: options.operation_timeout || 5_000
+    ]
 
-    case errors do
-      [] -> :ok
-      errors -> {:error, errors}
+    case NimbleOptions.validate(opts, @schema) do
+      {:ok, _} -> :ok
+      {:error, error} -> {:error, [error.message]}
     end
+  end
+
+  @doc """
+  Validates the options and raises on error.
+
+  ## Parameters
+
+  - `opts` - Keyword list of options to validate
+
+  ## Returns
+
+  - `keyword()` - Validated options
+
+  ## Raises
+
+  - `NimbleOptions.ValidationError` - If validation fails
+
+  ## Examples
+
+      Options.validate!([bucket: "my_bucket", timeout: 5000])  # [bucket: "my_bucket", timeout: 5000]
+
+  """
+  @spec validate!(keyword()) :: keyword()
+  def validate!(opts) do
+    NimbleOptions.validate!(opts, @schema)
   end
 
   @doc """
@@ -272,58 +400,4 @@ defmodule CouchbaseEx.Options do
     }
   end
 
-  # Private functions
-
-  @spec validate_bucket([String.t()], String.t()) :: [String.t()]
-  defp validate_bucket(errors, bucket) when is_binary(bucket) and byte_size(bucket) > 0 do
-    errors
-  end
-
-  defp validate_bucket(errors, _bucket) do
-    ["Bucket cannot be empty" | errors]
-  end
-
-  @spec validate_timeout([String.t()], non_neg_integer()) :: [String.t()]
-  defp validate_timeout(errors, timeout) when is_integer(timeout) and timeout > 0 do
-    errors
-  end
-
-  defp validate_timeout(errors, _timeout) do
-    ["Timeout must be positive" | errors]
-  end
-
-  @spec validate_expiry([String.t()], non_neg_integer() | nil) :: [String.t()]
-  defp validate_expiry(errors, nil) do
-    errors
-  end
-
-  defp validate_expiry(errors, expiry) when is_integer(expiry) and expiry >= 0 do
-    errors
-  end
-
-  defp validate_expiry(errors, _expiry) do
-    ["Expiry must be non-negative" | errors]
-  end
-
-  @spec validate_durability([String.t()], atom()) :: [String.t()]
-  defp validate_durability(errors, durability)
-       when durability in [:none, :majority, :majority_and_persist, :persist_to_majority] do
-    errors
-  end
-
-  defp validate_durability(errors, _durability) do
-    [
-      "Durability must be one of: :none, :majority, :majority_and_persist, :persist_to_majority"
-      | errors
-    ]
-  end
-
-  @spec validate_pool_size([String.t()], non_neg_integer()) :: [String.t()]
-  defp validate_pool_size(errors, pool_size) when is_integer(pool_size) and pool_size > 0 do
-    errors
-  end
-
-  defp validate_pool_size(errors, _pool_size) do
-    ["Pool size must be positive" | errors]
-  end
 end

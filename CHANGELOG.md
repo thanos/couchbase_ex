@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test configuration with `config/test.exs`
 - Production configuration with `config/prod.exs`
 - Programmatic configuration override
+- Enhanced options validation with `nimble_options`
 
 #### Error Handling
 - Custom `CouchbaseEx.Error` struct with detailed error information
@@ -98,6 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Dependencies
 - `jason` - JSON encoding/decoding
+- `dotenvy` - Environment variable loading
+- `nimble_options` - Options validation and documentation
 - `mox` - Mocking for tests (test only)
 - `ex_doc` - Documentation generation (dev only)
 - `dialyxir` - Static analysis (dev only)
