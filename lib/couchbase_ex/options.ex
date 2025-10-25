@@ -254,11 +254,11 @@ defmodule CouchbaseEx.Options do
       timeout: options.timeout,
       expiry: options.expiry,
       durability: options.durability,
-      params: options.params || [],
+      params: options.params,
       pool_size: options.pool_size,
-      connection_timeout: options.connection_timeout || 10_000,
-      query_timeout: options.query_timeout || 30_000,
-      operation_timeout: options.operation_timeout || 5_000
+      connection_timeout: options.connection_timeout,
+      query_timeout: options.query_timeout,
+      operation_timeout: options.operation_timeout
     ]
 
     case NimbleOptions.validate(opts, @schema) do
