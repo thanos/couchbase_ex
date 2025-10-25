@@ -16,7 +16,13 @@ defmodule CouchbaseEx.MixProject do
       source_url: "https://github.com/thanos/couchbase_ex",
       docs: [
         main: "CouchbaseEx",
-        extras: ["README.md"]
+        extras: [
+          "README.md",
+          "docs/quick-start.md",
+          "docs/settings.md",
+          "docs/connecting.md",
+          "docs/crud-operations.md"
+        ]
       ]
     ]
   end
