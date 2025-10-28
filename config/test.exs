@@ -3,9 +3,9 @@ import Config
 # Test configuration
 # These can be overridden by environment variables
 config :couchbase_ex,
-  connection_string: System.get_env("COUCHBASE_HOST", "couchbase://127.0.0.1"),
+  connection_string: System.get_env("COUCHBASE_HOST", "http://127.0.0.1:8091/"),
   username: System.get_env("COUCHBASE_USER", "tester"),
-  password: System.get_env("COUCHBASE_PASSWORD", "password"),
+  password: System.get_env("COUCHBASE_PASSWORD", "csfb2010"),
   bucket: System.get_env("COUCHBASE_BUCKET", "default"),
   timeout: System.get_env("COUCHBASE_TIMEOUT", "2000") |> String.to_integer(),
   pool_size: System.get_env("COUCHBASE_POOL_SIZE", "2") |> String.to_integer(),

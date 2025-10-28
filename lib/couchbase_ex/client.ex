@@ -533,8 +533,8 @@ defmodule CouchbaseEx.Client do
       is_nil(password) or password == "" ->
         {:error, "Password cannot be empty"}
 
-      not String.starts_with?(connection_string, "couchbase://") ->
-        {:error, "Invalid connection string format. Must start with 'couchbase://'"}
+      not (String.starts_with?(connection_string, "couchbase://") or String.starts_with?(connection_string, "http://")) ->
+        {:error, "Invalid connection string format. Must start with 'couchbase://' or 'http://'"}
 
       true ->
         :ok
@@ -543,7 +543,10 @@ defmodule CouchbaseEx.Client do
 
   @spec send_command(t(), String.t(), map()) :: {:ok, any()} | {:error, Error.t()}
   defp send_command(client, command, params) do
+    require Logger
+
     if is_nil(client.port) do
+      Logger.error("Client.send_command called but client not connected")
       {:error, Error.new(:not_connected, "Client not connected to Couchbase")}
     else
       message = %{
@@ -552,10 +555,18 @@ defmodule CouchbaseEx.Client do
         timestamp: System.monotonic_time(:millisecond)
       }
 
+      Logger.debug("Client sending command '#{command}' with params: #{inspect(params)}")
+
       case PortManager.send_command(client.port, message) do
-        {:ok, %{"success" => true, "data" => data} } -> {:ok, data}
-        {:ok, %{"success" => false, "error" => error} } -> {:error, Error.from_map(error)}
-        {:error, reason} -> {:error, Error.new(:communication_failed, to_string(reason))}
+        {:ok, %{"success" => true, "data" => data} } ->
+          Logger.debug("Client received successful response for command '#{command}': #{inspect(data)}")
+          {:ok, data}
+        {:ok, %{"success" => false, "error" => error} } ->
+          Logger.error("Client received error response for command '#{command}': #{inspect(error)}")
+          {:error, Error.from_map(error)}
+        {:error, reason} ->
+          Logger.error("Client communication failed for command '#{command}': #{inspect(reason)}")
+          {:error, Error.new(:communication_failed, to_string(reason))}
       end
     end
   end

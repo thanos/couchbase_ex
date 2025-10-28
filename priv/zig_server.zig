@@ -2,8 +2,12 @@ const std = @import("std");
 const json = std.json;
 const Allocator = std.mem.Allocator;
 
-// Import the couchbase-zig-client
-const couchbase = @import("couchbase");
+// Import Couchbase C SDK
+const couchbase = @cImport({
+    @cInclude("libcouchbase/couchbase.h");
+    @cInclude("libcouchbase/logger.h");
+    @cInclude("libcouchbase/error.h");
+});
 
 // Global allocator
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -25,7 +29,7 @@ const Response = struct {
 };
 
 // Global client instance
-var client: ?couchbase.Client = null;
+var client: ?couchbase.lcb_INSTANCE = null;
 
 // Connection configuration
 var connection_config: ConnectionConfig = undefined;
@@ -161,14 +165,71 @@ fn parseConnectionArgs(args: *std.process.ArgIterator) !ConnectionConfig {
 }
 
 fn handleConnect(request: Request) !Response {
-    // Use the connection config from command line arguments
-    client = try couchbase.Client.connect(allocator, .{
-        .connection_string = connection_config.connection_string,
-        .username = connection_config.username,
-        .password = connection_config.password,
-        .bucket = connection_config.bucket,
-        .timeout = connection_config.timeout,
-    });
+    // Create Couchbase instance
+    var instance: couchbase.lcb_INSTANCE = undefined;
+    var create_options: couchbase.lcb_CREATEOPTS = std.mem.zeroes(couchbase.lcb_CREATEOPTS);
+    
+    // Set connection string
+    create_options.connstr = connection_config.connection_string.ptr;
+    create_options.connstr_len = connection_config.connection_string.len;
+    
+    // Set username and password
+    create_options.username = connection_config.username.ptr;
+    create_options.username_len = connection_config.username.len;
+    create_options.password = connection_config.password.ptr;
+    create_options.password_len = connection_config.password.len;
+    
+    // Create the instance
+    const err = couchbase.lcb_create(&instance, &create_options);
+    if (err != couchbase.LCB_SUCCESS) {
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Failed to create Couchbase instance: {s}", .{couchbase.lcb_strerror(instance, err)}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    // Connect to the cluster
+    const connect_err = couchbase.lcb_connect(instance);
+    if (connect_err != couchbase.LCB_SUCCESS) {
+        couchbase.lcb_destroy(instance);
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Failed to connect to Couchbase: {s}", .{couchbase.lcb_strerror(instance, connect_err)}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    // Wait for connection to be established
+    couchbase.lcb_wait(instance, couchbase.LCB_WAIT_DEFAULT);
+    
+    // Check connection status
+    const status = couchbase.lcb_get_bootstrap_status(instance);
+    if (status != couchbase.LCB_SUCCESS) {
+        couchbase.lcb_destroy(instance);
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Connection failed: {s}", .{couchbase.lcb_strerror(instance, status)}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    // Set the bucket
+    const bucket_err = couchbase.lcb_set_bucket(instance, connection_config.bucket.ptr, connection_config.bucket.len);
+    if (bucket_err != couchbase.LCB_SUCCESS) {
+        couchbase.lcb_destroy(instance);
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Failed to set bucket: {s}", .{couchbase.lcb_strerror(instance, bucket_err)}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    client = instance;
     
     return Response{
         .success = true,
@@ -179,8 +240,8 @@ fn handleConnect(request: Request) !Response {
 }
 
 fn handleClose(request: Request) !Response {
-    if (client) |*c| {
-        c.close();
+    if (client) |instance| {
+        couchbase.lcb_destroy(instance);
         client = null;
     }
     
@@ -206,11 +267,75 @@ fn handleGet(request: Request) !Response {
     const key = params.get("key").?.string;
     const timeout = params.get("timeout").?.integer;
     
-    const result = try client.?.get(key, .{ .timeout = @intCast(timeout) });
-    defer result.deinit();
+    // Create get command
+    var cmd: couchbase.lcb_CMDGET = std.mem.zeroes(couchbase.lcb_CMDGET);
+    cmd.key.vtype = couchbase.LCB_KV_COPY;
+    cmd.key.u_buf.base = key.ptr;
+    cmd.key.u_buf.len = key.len;
+    cmd.timeout = @intCast(timeout);
     
-    // Convert result to JSON
-    const json_value = try convertToJson(result);
+    // Result storage
+    var result_data: ?[]u8 = null;
+    var result_flags: u32 = 0;
+    var result_cas: u64 = 0;
+    var operation_success = false;
+    
+    // Callback for get operation
+    const get_callback = struct {
+        fn callback(instance: couchbase.lcb_INSTANCE, cbtype: c_int, resp: ?*const couchbase.lcb_RESPGET) callconv(.C) void {
+            _ = instance;
+            _ = cbtype;
+            
+            if (resp) |response| {
+                if (response.rc == couchbase.LCB_SUCCESS) {
+                    // Copy the value
+                    const value_len = response.value_len;
+                    const value_ptr = response.value;
+                    result_data = allocator.alloc(u8, value_len) catch return;
+                    @memcpy(result_data.?.ptr, value_ptr, value_len);
+                    result_flags = response.flags;
+                    result_cas = response.cas;
+                    operation_success = true;
+                }
+            }
+        }
+    }.callback;
+    
+    // Set callback
+    couchbase.lcb_install_callback3(client.?, couchbase.LCB_CALLBACK_GET, get_callback);
+    
+    // Execute get operation
+    const err = couchbase.lcb_get3(client.?, null, &cmd);
+    if (err != couchbase.LCB_SUCCESS) {
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Get operation failed: {s}", .{couchbase.lcb_strerror(client.?, err)}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    // Wait for operation to complete
+    couchbase.lcb_wait(client.?, couchbase.LCB_WAIT_DEFAULT);
+    
+    if (!operation_success) {
+        return Response{
+            .success = false,
+            .data = null,
+            .error = "Document not found",
+            .request_id = request.request_id,
+        };
+    }
+    
+    // Parse JSON from result
+    const json_value = json.parseFromSlice(json.Value, allocator, result_data.?, .{}) catch |parse_err| {
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Failed to parse document JSON: {}", .{parse_err}),
+            .request_id = request.request_id,
+        };
+    };
     
     return Response{
         .success = true,

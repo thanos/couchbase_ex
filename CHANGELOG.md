@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - High-performance Zig server backend for Couchbase operations
 - Comprehensive CRUD operations (get, set, insert, replace, upsert, delete)
 - N1QL query support with parameterized queries
-- Subdocument operations (lookup_in, mutate_in)
+- **Subdocument operations (lookup_in, mutate_in) - COMPLETED**
+  - Full integration with couchbase-zig-client SDK
+  - Support for all subdoc operations: get, exists, replace, dict_add, dict_upsert, array operations, delete, counter
+  - Proper error handling and result conversion
 - Health and diagnostics (ping, diagnostics)
 - Connection management with configurable timeouts and pool sizes
 - Robust error handling with custom error types
@@ -42,8 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CouchbaseEx.query/3` - Execute parameterized N1QL queries
 
 #### Subdocument Operations
-- `CouchbaseEx.lookup_in/3` - Perform subdocument lookups
-- `CouchbaseEx.mutate_in/3` - Perform subdocument mutations
+- `CouchbaseEx.lookup_in/3` - Perform subdocument lookups with full SDK integration
+- `CouchbaseEx.mutate_in/3` - Perform subdocument mutations with full SDK integration
+- Supported operations:
+  - **Lookup**: get, exists, get_count
+  - **Mutation**: replace, dict_add, dict_upsert/upsert, array_add_first, array_add_last, array_add_unique, array_insert, delete/remove, counter/increment
 
 #### Health and Diagnostics
 - `CouchbaseEx.ping/1` - Ping cluster services
@@ -63,13 +69,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Error Handling
 - Custom `CouchbaseEx.Error` struct with detailed error information
-- Error conversion from Zig server responses
-- Retry logic with exponential backoff
-- Comprehensive error types and messages
+- **Comprehensive error mapping** - All 40+ Couchbase SDK errors mapped to Elixir atoms
+- **Structured error responses** - Error code, message, and context from Zig server
+- **Smart error parsing** - Handles both structured and simple error formats
+- **Retry logic** - Exponential backoff with jitter (max 30s)
+- **Retryable detection** - Automatic detection of retryable vs permanent errors
+- **Error context** - Operation and key information included in error responses
+- **44 comprehensive error tests** - Full coverage of error handling scenarios
 
 #### Testing
-- Unit tests for all core functionality (73 tests)
-- Integration tests for Couchbase server operations (14 tests)
+- Unit tests for all core functionality (113 tests total)
+  - 69 core functionality tests
+  - 44 comprehensive error handling tests
+- Integration tests for Couchbase server operations (23 tests)
+  - 14 original integration tests
+  - 9 subdocument operation tests
 - Test organization with proper tagging
 - Mock support with Mox for unit testing
 - Test aliases for different test types
@@ -84,9 +98,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Zig Server
 - High-performance Couchbase operations in Zig
+- Full integration with couchbase-zig-client library
 - Command-line argument parsing for connection configuration
 - JSON message processing and response generation
 - Comprehensive error handling and reporting
+- Real Couchbase SDK operations for all CRUD, query, and subdocument operations
 
 #### Configuration Options
 - Connection string validation

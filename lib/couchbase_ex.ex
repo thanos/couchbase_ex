@@ -66,7 +66,9 @@ defmodule CouchbaseEx do
   """
   @spec connect(options()) :: result()
   def connect(opts \\ []) do
+    require Logger
     config = Config.connection_config()
+    Logger.debug("CouchbaseEx.connect called with config: #{inspect(config)} and opts: #{inspect(opts)}")
     Client.connect(config.connection_string, config.username, config.password, opts)
   end
 
@@ -89,6 +91,8 @@ defmodule CouchbaseEx do
   """
   @spec connect(String.t(), String.t(), String.t(), options()) :: result()
   def connect(connection_string, username, password, opts) do
+    require Logger
+    Logger.debug("CouchbaseEx.connect called with connection_string: #{connection_string}, username: #{username}, opts: #{inspect(opts)}")
     Client.connect(connection_string, username, password, opts)
   end
 
