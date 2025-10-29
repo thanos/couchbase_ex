@@ -56,6 +56,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added fallback clause to `Error.from_map/1` to handle non-map inputs
   - Prevents `FunctionClauseError` when called with invalid input
   - Returns generic error with `:unknown_error` reason
+- Updated connection string validation to accept `https://` for secure connections
+  - Now accepts `couchbase://`, `http://`, and `https://` protocols
+  - Enables secure HTTP connections to Couchbase clusters
 
 ### Removed
 - Removed unused `skip_if_unavailable` macro from integration tests (tests use inline skip pattern instead)

@@ -533,8 +533,10 @@ defmodule CouchbaseEx.Client do
       is_nil(password) or password == "" ->
         {:error, "Password cannot be empty"}
 
-      not (String.starts_with?(connection_string, "couchbase://") or String.starts_with?(connection_string, "http://")) ->
-        {:error, "Invalid connection string format. Must start with 'couchbase://' or 'http://'"}
+      not (String.starts_with?(connection_string, "couchbase://") or 
+             String.starts_with?(connection_string, "http://") or
+             String.starts_with?(connection_string, "https://")) ->
+        {:error, "Invalid connection string format. Must start with 'couchbase://', 'http://', or 'https://'"}
 
       true ->
         :ok
