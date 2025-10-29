@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test configuration supports separate test credentials
 - Updated `env.example` with test credential examples
 
+### Removed
+- Removed unused `skip_if_unavailable` macro from integration tests (tests use inline skip pattern instead)
+
 ### Documentation
 - Added `SECURITY.md` - Comprehensive security best practices guide
 - Added `SECURITY_FIX_SUMMARY.md` - Detailed security fix documentation

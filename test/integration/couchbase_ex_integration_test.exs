@@ -7,19 +7,6 @@ defmodule CouchbaseExIntegrationTest do
 
   @moduletag :integration
 
-  # Helper macro to skip tests when Couchbase is not available
-  defmacro skip_if_unavailable(do: block) do
-    quote do
-      test context do
-        if Map.get(context, :skip, false) do
-          :skip
-        else
-          unquote(block)
-        end
-      end
-    end
-  end
-
   setup do
     # Skip integration tests if no Couchbase server is available
     case check_couchbase_availability() do
