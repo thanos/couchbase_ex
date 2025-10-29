@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added build options for custom paths (`-Dcouchbase-include`, `-Dcouchbase-lib`)
   - Supports Apple Silicon, Intel Mac, various Linux distros, and Windows
   - Build now works on any platform with Couchbase C SDK installed
+- **Defer Ordering**: Fixed confusing defer usage in multiple Zig server files
+  - Made memory cleanup explicit instead of using defer
+  - Improved code clarity and maintainability
+  - Fixed in `priv/zig_server_c_sdk.zig`, `priv/zig_server_integrated.zig`, `priv/zig_server_v0_14.zig`
+  - Prevents potential use-after-free confusion during maintenance
 - Added missing `Response.deinit()` method to legacy Zig server files
   - Fixed `priv/zig_server_simple.zig`
   - Fixed `priv/zig_server.zig`
@@ -47,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `MEMORY_LEAK_FIX.md` - Detailed memory leak fix documentation
 - Added `BUILD_CONFIGURATION.md` - Cross-platform build configuration guide
 - Added `CROSS_PLATFORM_BUILD_FIX.md` - Detailed cross-platform build fix documentation
+- Added `USE_AFTER_FREE_FIX.md` - Detailed defer ordering fix documentation
 
 ## [0.1.0] - 2025-10-26
 

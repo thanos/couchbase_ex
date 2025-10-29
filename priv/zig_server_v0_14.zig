@@ -57,8 +57,9 @@ pub fn main() !void {
                 .@"error" = try std.fmt.allocPrint(allocator, "Error: {any}", .{err}),
                 .request_id = request.value.request_id,
             };
-            defer allocator.free(error_response.@"error");
             try sendResponse(error_response);
+            // Free error message after sending response
+            allocator.free(error_response.@"error");
             continue;
         };
         
