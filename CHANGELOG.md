@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved code clarity and maintainability
   - Fixed in `priv/zig_server_c_sdk.zig`, `priv/zig_server_integrated.zig`, `priv/zig_server_v0_14.zig`
   - Prevents potential use-after-free confusion during maintenance
+- **Type Safety**: Made error field optional in `priv/zig_server_v0_14.zig`
+  - Changed `@"error": []const u8` to `@"error": ?[]const u8`
+  - Added proper `deinit()` method to safely free allocated error strings
+  - Replaced empty string literals (`""`) with `null` for success cases
+  - Prevents undefined behavior from attempting to free string literals
+  - Provides type-safe distinction between allocated and literal strings
 - Added missing `Response.deinit()` method to legacy Zig server files
   - Fixed `priv/zig_server_simple.zig`
   - Fixed `priv/zig_server.zig`

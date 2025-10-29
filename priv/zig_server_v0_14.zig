@@ -20,8 +20,19 @@ const Request = struct {
 const Response = struct {
     success: bool,
     data: json.Value,
-    @"error": []const u8,
+    @"error": ?[]const u8,  // Optional to distinguish allocated vs literal strings
     request_id: u32,
+    
+    pub fn deinit(self: Response) void {
+        // Only free error if it's an allocated string (not null, not empty literal)
+        if (self.@"error") |err| {
+            // Only free if it's not an empty string literal
+            // Empty string literals have len == 0, so we don't free them
+            if (err.len > 0) {
+                allocator.free(err);
+            }
+        }
+    }
 };
 
 pub fn main() !void {
@@ -59,7 +70,9 @@ pub fn main() !void {
             };
             try sendResponse(error_response);
             // Free error message after sending response
-            allocator.free(error_response.@"error");
+            if (error_response.@"error") |error_msg| {
+                allocator.free(error_msg);
+            }
             continue;
         };
         
@@ -135,7 +148,7 @@ fn handleConnect(request: Request) !Response {
     return Response{
         .success = true,
         .data = json.Value{ .object = json.ObjectMap.init(allocator) },
-        .@"error" = "",
+        .@"error" = null,
         .request_id = request.request_id,
     };
 }
@@ -150,7 +163,7 @@ fn handleClose(request: Request) !Response {
     return Response{
         .success = true,
         .data = json.Value{ .object = json.ObjectMap.init(allocator) },
-        .@"error" = "",
+        .@"error" = null,
         .request_id = request.request_id,
     };
 }
@@ -175,7 +188,7 @@ fn handleGet(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -216,7 +229,7 @@ fn handleSet(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -257,7 +270,7 @@ fn handleUpsert(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -291,7 +304,7 @@ fn handleDelete(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = json.ObjectMap.init(allocator) },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -322,7 +335,7 @@ fn handlePing(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = ping_data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -367,7 +380,7 @@ fn handleQuery(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -443,7 +456,7 @@ fn handleLookupIn(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
@@ -537,7 +550,7 @@ fn handleMutateIn(request: Request) !Response {
         return Response{
             .success = true,
             .data = json.Value{ .object = data },
-            .@"error" = "",
+            .@"error" = null,
             .request_id = request.request_id,
         };
     } else {
