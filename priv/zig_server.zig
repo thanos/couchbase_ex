@@ -288,6 +288,7 @@ fn handleGet(request: Request) !Response {
     var result_flags: u32 = 0;
     var result_cas: u64 = 0;
     var operation_success = false;
+    var allocation_failed = false;
     
     // Callback for get operation
     const get_callback = struct {
@@ -300,7 +301,10 @@ fn handleGet(request: Request) !Response {
                     // Copy the value
                     const value_len = response.value_len;
                     const value_ptr = response.value;
-                    result_data = allocator.alloc(u8, value_len) catch return;
+                    result_data = allocator.alloc(u8, value_len) catch {
+                        allocation_failed = true;
+                        return;
+                    };
                     @memcpy(result_data.?.ptr, value_ptr, value_len);
                     result_flags = response.flags;
                     result_cas = response.cas;
@@ -327,17 +331,39 @@ fn handleGet(request: Request) !Response {
     // Wait for operation to complete
     couchbase.lcb_wait(client.?, couchbase.LCB_WAIT_DEFAULT);
     
-    if (!operation_success) {
+    // Check for allocation failure
+    if (allocation_failed) {
+        // Clean up any allocated memory
+        if (result_data) |data| {
+            allocator.free(data);
+        }
         return Response{
             .success = false,
             .data = null,
-            .error = "Document not found",
+            .error = try std.fmt.allocPrint(allocator, "Memory allocation failed during get operation", .{}),
+            .request_id = request.request_id,
+        };
+    }
+    
+    if (!operation_success) {
+        // Clean up any allocated memory
+        if (result_data) |data| {
+            allocator.free(data);
+        }
+        return Response{
+            .success = false,
+            .data = null,
+            .error = try std.fmt.allocPrint(allocator, "Document not found", .{}),
             .request_id = request.request_id,
         };
     }
     
     // Parse JSON from result
     const json_value = json.parseFromSlice(json.Value, allocator, result_data.?, .{}) catch |parse_err| {
+        // Clean up allocated memory on parse error
+        if (result_data) |data| {
+            allocator.free(data);
+        }
         return Response{
             .success = false,
             .data = null,
@@ -345,6 +371,11 @@ fn handleGet(request: Request) !Response {
             .request_id = request.request_id,
         };
     };
+    
+    // Free the raw data buffer after successful parsing
+    if (result_data) |data| {
+        allocator.free(data);
+    }
     
     return Response{
         .success = true,

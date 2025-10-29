@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated `.gitignore` to prevent accidental credential commits
 
 ### Fixed
+- **Memory Leak**: Fixed memory leak in `priv/zig_server.zig` `handleGet()` function
+  - Added allocation failure tracking
+  - Added proper memory cleanup in all error paths
+  - Added cleanup in success path after JSON parsing
+  - Prevents memory leaks on allocation failures, operation failures, and parse errors
 - Added missing `Response.deinit()` method to legacy Zig server files
   - Fixed `priv/zig_server_simple.zig`
   - Fixed `priv/zig_server.zig`
@@ -34,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `SECURITY_FIX_SUMMARY.md` - Detailed security fix documentation
 - Added `.env.test.example` - Test environment template
 - Added `ZIG_SERVER_CLEANUP.md` - Documentation of Zig server file structure
+- Added `MEMORY_LEAK_FIX.md` - Detailed memory leak fix documentation
 
 ## [0.1.0] - 2025-10-26
 
