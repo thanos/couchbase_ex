@@ -1,7 +1,7 @@
 defmodule CouchbaseEx.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.1.1"
 
   def project do
     [
@@ -66,7 +66,13 @@ defmodule CouchbaseEx.MixProject do
       lint: ["format --check-formatted", "credo", "sobelow --config"],
       "test.unit": ["test --exclude integration"],
       "test.integration": ["test --only integration"],
-      "test.all": ["test"]
+      "test.all": ["test"],
+      compile: ["zig.build", "compile"],
+      "zig.build": ["run -e 'Mix.Tasks.Zig.Build.run([])'"],
+      "zig.clean": ["run -e 'Mix.Tasks.Zig.Clean.run([])'"],
+      "zig.test": ["run -e 'Mix.Tasks.Zig.Test.run([])'"],
+      "build.all": ["zig.build", "compile"],
+      "clean.all": ["zig.clean", "clean"]
     ]
   end
 
@@ -79,4 +85,5 @@ defmodule CouchbaseEx.MixProject do
       ]
     ]
   end
+
 end

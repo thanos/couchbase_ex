@@ -19,6 +19,17 @@ An Elixir client for Couchbase Server using a Zig port for high-performance oper
 
 ## Installation
 
+### Prerequisites
+
+Before installing CouchbaseEx, you need:
+
+1. **Couchbase C SDK** (libcouchbase) - See [DEPENDENCIES.md](DEPENDENCIES.md) for installation instructions
+2. **couchbase-zig-client** - Clone to sibling directory or configure custom path
+
+For detailed installation instructions, see [DEPENDENCIES.md](DEPENDENCIES.md).
+
+### Add to Your Project
+
 Add `couchbase_ex` to your list of dependencies in `mix.exs`:
 
 ```elixir
@@ -28,6 +39,24 @@ def deps do
   ]
 end
 ```
+
+### Quick Setup
+
+```bash
+# Install Couchbase C SDK (macOS)
+brew install libcouchbase
+
+# Clone couchbase-zig-client (default location)
+cd ..
+git clone https://github.com/thanos/couchbase-zig-client.git
+cd couchbase_ex
+
+# Build
+mix deps.get
+mix zig.build
+```
+
+For other platforms and advanced configuration, see [DEPENDENCIES.md](DEPENDENCIES.md).
 
 ## Quick Start
 

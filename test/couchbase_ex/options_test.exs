@@ -58,7 +58,11 @@ defmodule CouchbaseEx.OptionsTest do
         timeout: 5000,
         expiry: 3600,
         durability: :majority,
-        pool_size: 10
+        params: [],
+        pool_size: 10,
+        connection_timeout: 10000,
+        query_timeout: 30000,
+        operation_timeout: 5000
       }
 
       assert Options.validate_struct(options) == :ok

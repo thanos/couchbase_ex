@@ -2,11 +2,12 @@ import Config
 
 # Test configuration
 # These can be overridden by environment variables
+# Use COUCHBASE_TEST_* variables for test-specific credentials
 config :couchbase_ex,
-  connection_string: System.get_env("COUCHBASE_HOST", "couchbase://127.0.0.1"),
-  username: System.get_env("COUCHBASE_USER", "tester"),
-  password: System.get_env("COUCHBASE_PASSWORD", "password"),
-  bucket: System.get_env("COUCHBASE_BUCKET", "default"),
+  connection_string: System.get_env("COUCHBASE_TEST_HOST") || System.get_env("COUCHBASE_HOST", "http://127.0.0.1:8091/"),
+  username: System.get_env("COUCHBASE_TEST_USER") || System.get_env("COUCHBASE_USER", "Administrator"),
+  password: System.get_env("COUCHBASE_TEST_PASSWORD") || System.get_env("COUCHBASE_PASSWORD", "password"),
+  bucket: System.get_env("COUCHBASE_TEST_BUCKET") || System.get_env("COUCHBASE_BUCKET", "default"),
   timeout: System.get_env("COUCHBASE_TIMEOUT", "2000") |> String.to_integer(),
   pool_size: System.get_env("COUCHBASE_POOL_SIZE", "2") |> String.to_integer(),
   connection_timeout: System.get_env("COUCHBASE_CONNECTION_TIMEOUT", "5000") |> String.to_integer(),

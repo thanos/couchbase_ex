@@ -135,9 +135,15 @@ defmodule CouchbaseEx.PortManager do
     request_id = state.request_id + 1
     message_with_id = Map.put(message, "request_id", request_id)
 
+    # Log outgoing message
+    Logger.debug("PortManager sending command to Zig server: #{inspect(message_with_id)}")
+
     # Serialize message to JSON
     case Jason.encode(message_with_id) do
       {:ok, json_message} ->
+        # Log the JSON being sent
+        Logger.debug("PortManager sending JSON to Zig: #{json_message}")
+
         # Send command to Zig server
         Port.command(state.port, json_message <> "\n")
 
@@ -156,9 +162,15 @@ defmodule CouchbaseEx.PortManager do
 
   @impl true
   def handle_info({port, {:data, data}}, %{port: port} = state) do
+    # Log raw data received from Zig server
+    Logger.debug("PortManager received raw data from Zig: #{inspect(data)}")
+
     # Parse response from Zig server
     case parse_response(data) do
       {:ok, response} ->
+        # Log parsed response
+        Logger.debug("PortManager parsed response from Zig: #{inspect(response)}")
+        
         request_id = Map.get(response, "request_id")
 
         case Map.get(state.pending_requests, request_id) do
@@ -167,6 +179,9 @@ defmodule CouchbaseEx.PortManager do
             {:noreply, state}
 
           from ->
+            # Log successful response handling
+            Logger.debug("PortManager replying to caller for request ID: #{request_id}")
+            
             # Remove from pending requests
             new_pending_requests = Map.delete(state.pending_requests, request_id)
             new_state = %{state | pending_requests: new_pending_requests}
@@ -177,7 +192,8 @@ defmodule CouchbaseEx.PortManager do
         end
 
       {:error, reason} ->
-        Logger.error("Failed to parse response: #{inspect(reason)}")
+        Logger.error("Failed to parse response from Zig: #{inspect(reason)}")
+        Logger.error("Raw data that failed to parse: #{inspect(data)}")
         {:noreply, state}
     end
   end
@@ -281,8 +297,8 @@ defmodule CouchbaseEx.PortManager do
     # Try to find the Zig server executable
     case System.find_executable("couchbase_zig_server") do
       nil ->
-        # Fallback to a relative path
-        Path.join([Application.app_dir(:couchbase_ex, "priv"), "bin", "couchbase_zig_server"])
+        # Fallback to the built executable
+        Path.join([File.cwd!(), "zig-out", "bin", "couchbase_zig_server"])
 
       path ->
         path
@@ -291,18 +307,23 @@ defmodule CouchbaseEx.PortManager do
 
   @spec wait_for_port_ready(port(), non_neg_integer()) :: :ok | {:error, term()}
   defp wait_for_port_ready(port, timeout) do
+    Logger.debug("PortManager waiting for Zig server to be ready (timeout: #{timeout}ms)")
+    
     receive do
       {^port, {:data, "ready\n"}} ->
+        Logger.debug("PortManager received 'ready' signal from Zig server")
         :ok
 
       {^port, {:data, data}} ->
-        Logger.debug("Zig server output: #{data}")
+        Logger.debug("PortManager received data from Zig server while waiting for ready: #{inspect(data)}")
         wait_for_port_ready(port, timeout)
 
       {^port, {:exit_status, status}} ->
+        Logger.error("Zig server exited with status #{status} while waiting for ready")
         {:error, "Zig server exited with status #{status}"}
     after
       timeout ->
+        Logger.error("Timeout waiting for Zig server to be ready after #{timeout}ms")
         {:error, "Timeout waiting for Zig server to be ready"}
     end
   end
@@ -311,12 +332,15 @@ defmodule CouchbaseEx.PortManager do
   defp parse_response(data) do
     # Remove trailing newline
     clean_data = String.trim(data)
+    Logger.debug("PortManager parsing JSON response: #{clean_data}")
 
     case Jason.decode(clean_data) do
       {:ok, response} ->
+        Logger.debug("PortManager successfully parsed JSON response")
         {:ok, response}
 
       {:error, reason} ->
+        Logger.error("PortManager failed to parse JSON: #{inspect(reason)}")
         {:error, reason}
     end
   end

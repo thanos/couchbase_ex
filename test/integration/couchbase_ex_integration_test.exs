@@ -15,18 +15,20 @@ defmodule CouchbaseExIntegrationTest do
 
       {:error, reason} ->
         Logger.warning("Skipping integration tests: #{reason}")
-        :skip
+        {:ok, %{skip: true}}
     end
   end
 
   describe "CouchbaseEx.connect/0" do
-    test "connects using configuration" do
+    test "connects using configuration", %{skip: skip} do
+      if skip, do: :skip
       {:ok, client} = CouchbaseEx.connect()
       assert %CouchbaseEx.Client{} = client
       CouchbaseEx.close(client)
     end
 
-    test "connects with options override" do
+    test "connects with options override", %{skip: skip} do
+      if skip, do: :skip
       {:ok, client} = CouchbaseEx.connect(bucket: "default", timeout: 10_000)
       assert %CouchbaseEx.Client{} = client
       CouchbaseEx.close(client)
@@ -34,18 +36,32 @@ defmodule CouchbaseExIntegrationTest do
   end
 
   describe "CouchbaseEx.connect/4" do
-    test "connects with explicit parameters" do
-      {:ok, client} =
-        CouchbaseEx.connect("couchbase://localhost", "Administrator", "password", [])
+    test "connects with explicit parameters", %{skip: skip} do
+      if skip, do: :skip
+
+      # Get credentials from config (which loads from env vars)
+      host = Application.get_env(:couchbase_ex, :connection_string)
+      user = Application.get_env(:couchbase_ex, :username)
+      pass = Application.get_env(:couchbase_ex, :password)
+
+      {:ok, client} = CouchbaseEx.connect(host, user, pass, [])
 
       assert %CouchbaseEx.Client{} = client
       CouchbaseEx.close(client)
     end
 
-    test "connects with explicit parameters and options" do
+    test "connects with explicit parameters and options", %{skip: skip} do
+      if skip, do: :skip
+
+      # Get credentials from config (which loads from env vars)
+      host = Application.get_env(:couchbase_ex, :connection_string)
+      user = Application.get_env(:couchbase_ex, :username)
+      pass = Application.get_env(:couchbase_ex, :password)
+      bucket = Application.get_env(:couchbase_ex, :bucket)
+
       {:ok, client} =
-        CouchbaseEx.connect("couchbase://localhost", "Administrator", "password",
-          bucket: "default",
+        CouchbaseEx.connect(host, user, pass,
+          bucket: bucket,
           timeout: 10_000
         )
 
@@ -183,6 +199,121 @@ defmodule CouchbaseExIntegrationTest do
 
       assert is_list(results)
       assert length(results) >= 1
+    end
+  end
+
+  describe "Subdocument Operations" do
+    setup do
+      {:ok, client} = CouchbaseEx.connect()
+      on_exit(fn -> CouchbaseEx.close(client) end)
+
+      # Create a test document with nested structure
+      test_doc = %{
+        name: "John Doe",
+        age: 30,
+        email: "john@example.com",
+        address: %{
+          street: "123 Main St",
+          city: "Springfield",
+          zip: "12345"
+        },
+        hobbies: ["reading", "coding", "gaming"],
+        metadata: %{
+          created_at: "2024-01-01",
+          updated_at: "2024-01-01"
+        }
+      }
+
+      key = "subdoc_test:#{:erlang.unique_integer([:positive])}"
+      {:ok, _} = CouchbaseEx.set(client, key, test_doc)
+
+      {:ok, %{client: client, key: key}}
+    end
+
+    test "lookup_in - get single field", %{client: client, key: key} do
+      specs = [%{op: "get", path: "name"}]
+      {:ok, result} = CouchbaseEx.lookup_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "values")
+      assert is_list(result["values"])
+      assert length(result["values"]) == 1
+    end
+
+    test "lookup_in - get nested field", %{client: client, key: key} do
+      specs = [%{op: "get", path: "address.city"}]
+      {:ok, result} = CouchbaseEx.lookup_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "values")
+      assert is_list(result["values"])
+    end
+
+    test "lookup_in - multiple fields", %{client: client, key: key} do
+      specs = [
+        %{op: "get", path: "name"},
+        %{op: "get", path: "age"},
+        %{op: "get", path: "email"}
+      ]
+      {:ok, result} = CouchbaseEx.lookup_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "values")
+      assert is_list(result["values"])
+      assert length(result["values"]) == 3
+    end
+
+    test "lookup_in - exists check", %{client: client, key: key} do
+      specs = [%{op: "exists", path: "name"}]
+      {:ok, result} = CouchbaseEx.lookup_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
+    end
+
+    test "mutate_in - upsert field", %{client: client, key: key} do
+      specs = [%{op: "upsert", path: "name", value: "Jane Doe"}]
+      {:ok, result} = CouchbaseEx.mutate_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
+
+      # Verify the change
+      lookup_specs = [%{op: "get", path: "name"}]
+      {:ok, lookup_result} = CouchbaseEx.lookup_in(client, key, lookup_specs)
+      assert is_list(lookup_result["values"])
+    end
+
+    test "mutate_in - replace field", %{client: client, key: key} do
+      specs = [%{op: "replace", path: "age", value: "31"}]
+      {:ok, result} = CouchbaseEx.mutate_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
+    end
+
+    test "mutate_in - remove field", %{client: client, key: key} do
+      specs = [%{op: "remove", path: "email"}]
+      {:ok, result} = CouchbaseEx.mutate_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
+    end
+
+    test "mutate_in - array operations", %{client: client, key: key} do
+      specs = [%{op: "array_add_last", path: "hobbies", value: "\"swimming\""}]
+      {:ok, result} = CouchbaseEx.mutate_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
+    end
+
+    test "mutate_in - counter operation", %{client: client, key: key} do
+      specs = [%{op: "counter", path: "age", value: "1"}]
+      {:ok, result} = CouchbaseEx.mutate_in(client, key, specs)
+
+      assert is_map(result)
+      assert Map.has_key?(result, "cas")
     end
   end
 

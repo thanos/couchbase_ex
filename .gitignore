@@ -31,4 +31,4 @@ couchbase_ex-*.tar
 /priv/build.zig
 
 # Mock couchbase-zig-client
-/couchbase-zig-client/
+/couchbase-zig-client/.env.test
