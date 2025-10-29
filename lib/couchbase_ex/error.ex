@@ -63,6 +63,10 @@ defmodule CouchbaseEx.Error do
     new(reason, message, details)
   end
 
+  def from_map(_invalid_input) do
+    new(:unknown_error, "Invalid error format")
+  end
+
   @doc """
   Creates an error from a Zig port response.
 
