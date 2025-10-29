@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-10-29
+
+### Security
+- **CRITICAL**: Removed hardcoded credentials from integration tests
+- Implemented environment variable-based credential management
+- Added test-specific credential support (`COUCHBASE_TEST_*` variables)
+- Created comprehensive security documentation (`SECURITY.md`)
+- Added `.env.test.example` template for test credentials
+- Updated `.gitignore` to prevent accidental credential commits
+
+### Changed
+- Integration tests now load credentials from configuration/environment variables
+- Test configuration supports separate test credentials
+- Updated `env.example` with test credential examples
+
+### Documentation
+- Added `SECURITY.md` - Comprehensive security best practices guide
+- Added `SECURITY_FIX_SUMMARY.md` - Detailed security fix documentation
+- Added `.env.test.example` - Test environment template
+
+## [0.1.0] - 2025-10-26
+
 ### Added
 - Initial release of CouchbaseEx Elixir client
 - High-performance Zig server backend for Couchbase operations

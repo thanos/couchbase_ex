@@ -51,8 +51,13 @@ defmodule CouchbaseExIntegrationTest do
   describe "CouchbaseEx.connect/4" do
     test "connects with explicit parameters", %{skip: skip} do
       if skip, do: :skip
-      {:ok, client} =
-        CouchbaseEx.connect("http://127.0.0.1:8091/", "tester", "csfb2010", [])
+
+      # Get credentials from config (which loads from env vars)
+      host = Application.get_env(:couchbase_ex, :connection_string)
+      user = Application.get_env(:couchbase_ex, :username)
+      pass = Application.get_env(:couchbase_ex, :password)
+
+      {:ok, client} = CouchbaseEx.connect(host, user, pass, [])
 
       assert %CouchbaseEx.Client{} = client
       CouchbaseEx.close(client)
@@ -60,9 +65,16 @@ defmodule CouchbaseExIntegrationTest do
 
     test "connects with explicit parameters and options", %{skip: skip} do
       if skip, do: :skip
+
+      # Get credentials from config (which loads from env vars)
+      host = Application.get_env(:couchbase_ex, :connection_string)
+      user = Application.get_env(:couchbase_ex, :username)
+      pass = Application.get_env(:couchbase_ex, :password)
+      bucket = Application.get_env(:couchbase_ex, :bucket)
+
       {:ok, client} =
-        CouchbaseEx.connect("http://127.0.0.1:8091/", "tester", "csfb2010",
-          bucket: "default",
+        CouchbaseEx.connect(host, user, pass,
+          bucket: bucket,
           timeout: 10_000
         )
 
