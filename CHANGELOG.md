@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `CROSS_PLATFORM_BUILD_FIX.md` - Detailed cross-platform build fix documentation
 - Added `USE_AFTER_FREE_FIX.md` - Detailed defer ordering fix documentation
 - Added `OPTIONAL_ERROR_FIELD_FIX.md` - Detailed type safety and memory leak fix documentation
+- Added `DEPENDENCIES.md` - Comprehensive dependency installation and configuration guide
 
 ## [0.1.0] - 2025-10-26
 

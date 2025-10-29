@@ -4,9 +4,16 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    // Get couchbase-zig-client path from build option or use default
+    const couchbase_client_path = b.option(
+        []const u8,
+        "couchbase-client-path",
+        "Path to couchbase-zig-client root.zig file"
+    ) orelse "../couchbase-zig-client/src/root.zig";
+
     // Add couchbase-zig-client as a module
     const couchbase_module = b.addModule("couchbase", .{
-        .root_source_file = b.path("../couchbase-zig-client/src/root.zig"),
+        .root_source_file = b.path(couchbase_client_path),
     });
 
     // Create the Zig server executable
