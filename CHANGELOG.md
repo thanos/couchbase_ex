@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `.env.test.example` template for test credentials
 - Updated `.gitignore` to prevent accidental credential commits
 
+### Fixed
+- Added missing `Response.deinit()` method to legacy Zig server files
+  - Fixed `priv/zig_server_simple.zig`
+  - Fixed `priv/zig_server.zig`
+  - Fixed `priv/zig_server_c_sdk.zig`
+- Prevents compilation errors when using legacy server implementations
+
 ### Changed
 - Integration tests now load credentials from configuration/environment variables
 - Test configuration supports separate test credentials
@@ -26,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `SECURITY.md` - Comprehensive security best practices guide
 - Added `SECURITY_FIX_SUMMARY.md` - Detailed security fix documentation
 - Added `.env.test.example` - Test environment template
+- Added `ZIG_SERVER_CLEANUP.md` - Documentation of Zig server file structure
 
 ## [0.1.0] - 2025-10-26
 

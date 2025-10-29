@@ -26,6 +26,15 @@ const Response = struct {
     data: ?json.Value,
     error: ?[]const u8,
     request_id: u32,
+    
+    pub fn deinit(self: Response) void {
+        // Clean up allocated error message if present
+        if (self.error) |err| {
+            allocator.free(err);
+        }
+        // Note: data cleanup is handled by the caller since it may contain
+        // references to other allocated memory
+    }
 };
 
 // Global client instance
