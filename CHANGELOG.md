@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added proper memory cleanup in all error paths
   - Added cleanup in success path after JSON parsing
   - Prevents memory leaks on allocation failures, operation failures, and parse errors
+- **Cross-Platform Build**: Fixed hardcoded macOS-specific paths in `build.zig`
+  - Added automatic platform detection (macOS, Linux, Windows)
+  - Added build options for custom paths (`-Dcouchbase-include`, `-Dcouchbase-lib`)
+  - Supports Apple Silicon, Intel Mac, various Linux distros, and Windows
+  - Build now works on any platform with Couchbase C SDK installed
 - Added missing `Response.deinit()` method to legacy Zig server files
   - Fixed `priv/zig_server_simple.zig`
   - Fixed `priv/zig_server.zig`
@@ -40,6 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `.env.test.example` - Test environment template
 - Added `ZIG_SERVER_CLEANUP.md` - Documentation of Zig server file structure
 - Added `MEMORY_LEAK_FIX.md` - Detailed memory leak fix documentation
+- Added `BUILD_CONFIGURATION.md` - Cross-platform build configuration guide
+- Added `CROSS_PLATFORM_BUILD_FIX.md` - Detailed cross-platform build fix documentation
 
 ## [0.1.0] - 2025-10-26
 
