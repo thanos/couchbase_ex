@@ -78,6 +78,8 @@ pub fn main() !void {
         
         // Send response
         try sendResponse(response);
+        // Clean up response after sending (frees allocated error strings)
+        response.deinit();
     }
 }
 
