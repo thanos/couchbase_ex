@@ -23,6 +23,13 @@ defmodule CouchbaseExTest do
       assert {:error, %Error{}} =
                CouchbaseEx.connect("invalid://connection", "user", "pass", opts)
     end
+
+    test "rejects invalid protocol in connection string" do
+      # Test that invalid protocols are rejected
+      result = CouchbaseEx.connect("ftp://localhost", "user", "pass", [])
+
+      assert {:error, %Error{reason: :invalid_connection_params}} = result
+    end
   end
 
   describe "CouchbaseEx.get/2" do

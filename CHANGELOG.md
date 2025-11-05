@@ -7,12 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-10-29
+
+### Security
+- **CRITICAL**: Removed hardcoded credentials from integration tests
+- Implemented environment variable-based credential management
+- Added test-specific credential support (`COUCHBASE_TEST_*` variables)
+- Created comprehensive security documentation (`SECURITY.md`)
+- Added `.env.test.example` template for test credentials
+- Updated `.gitignore` to prevent accidental credential commits
+
+### Fixed
+- **Memory Leak**: Fixed memory leak in `priv/zig_server.zig` `handleGet()` function
+  - Added allocation failure tracking
+  - Added proper memory cleanup in all error paths
+  - Added cleanup in success path after JSON parsing
+  - Prevents memory leaks on allocation failures, operation failures, and parse errors
+- **Cross-Platform Build**: Fixed hardcoded macOS-specific paths in `build.zig`
+  - Added automatic platform detection (macOS, Linux, Windows)
+  - Added build options for custom paths (`-Dcouchbase-include`, `-Dcouchbase-lib`)
+  - Supports Apple Silicon, Intel Mac, various Linux distros, and Windows
+  - Build now works on any platform with Couchbase C SDK installed
+- **Defer Ordering**: Fixed confusing defer usage in multiple Zig server files
+  - Made memory cleanup explicit instead of using defer
+  - Improved code clarity and maintainability
+  - Fixed in `priv/zig_server_c_sdk.zig`, `priv/zig_server_integrated.zig`, `priv/zig_server_v0_14.zig`
+  - Prevents potential use-after-free confusion during maintenance
+- **Type Safety & Memory Leak**: Made error field optional in `priv/zig_server_v0_14.zig`
+  - Changed `@"error": []const u8` to `@"error": ?[]const u8`
+  - Added proper `deinit()` method to safely free allocated error strings
+  - Replaced empty string literals (`""`) with `null` for success cases
+  - Added cleanup in success path to free error responses from `processRequest`
+  - Prevents undefined behavior from attempting to free string literals
+  - Prevents memory leak when `processRequest` returns error responses
+  - Provides type-safe distinction between allocated and literal strings
+- Added missing `Response.deinit()` method to legacy Zig server files
+  - Fixed `priv/zig_server_simple.zig`
+  - Fixed `priv/zig_server.zig`
+  - Fixed `priv/zig_server_c_sdk.zig`
+- Prevents compilation errors when using legacy server implementations
+
+### Changed
+- Integration tests now load credentials from configuration/environment variables
+- Test configuration supports separate test credentials
+- Updated `env.example` with test credential examples
+
+### Fixed (Additional)
+- Added fallback clause to `Error.from_map/1` to handle non-map inputs
+  - Prevents `FunctionClauseError` when called with invalid input
+  - Returns generic error with `:unknown_error` reason
+- Updated connection string validation to accept `https://` for secure connections
+  - Now accepts `couchbase://`, `http://`, and `https://` protocols
+  - Enables secure HTTP connections to Couchbase clusters
+- Fixed error categorization in `connect_with_options/4`
+  - Validation errors now correctly return `:invalid_connection_params` reason
+  - Uses case-insensitive matching for validation error detection
+  - Improves error handling consistency
+
+### Removed
+- Removed unused `skip_if_unavailable` macro from integration tests (tests use inline skip pattern instead)
+
+### Documentation
+- Added `SECURITY.md` - Comprehensive security best practices guide
+- Added `SECURITY_FIX_SUMMARY.md` - Detailed security fix documentation
+- Added `.env.test.example` - Test environment template
+- Added `ZIG_SERVER_CLEANUP.md` - Documentation of Zig server file structure
+- Added `MEMORY_LEAK_FIX.md` - Detailed memory leak fix documentation
+- Added `BUILD_CONFIGURATION.md` - Cross-platform build configuration guide
+- Added `CROSS_PLATFORM_BUILD_FIX.md` - Detailed cross-platform build fix documentation
+- Added `USE_AFTER_FREE_FIX.md` - Detailed defer ordering fix documentation
+- Added `OPTIONAL_ERROR_FIELD_FIX.md` - Detailed type safety and memory leak fix documentation
+- Added `DEPENDENCIES.md` - Comprehensive dependency installation and configuration guide
+
+## [0.1.0] - 2025-10-26
+
 ### Added
 - Initial release of CouchbaseEx Elixir client
 - High-performance Zig server backend for Couchbase operations
 - Comprehensive CRUD operations (get, set, insert, replace, upsert, delete)
 - N1QL query support with parameterized queries
-- Subdocument operations (lookup_in, mutate_in)
+- **Subdocument operations (lookup_in, mutate_in) - COMPLETED**
+  - Full integration with couchbase-zig-client SDK
+  - Support for all subdoc operations: get, exists, replace, dict_add, dict_upsert, array operations, delete, counter
+  - Proper error handling and result conversion
 - Health and diagnostics (ping, diagnostics)
 - Connection management with configurable timeouts and pool sizes
 - Robust error handling with custom error types
@@ -42,8 +119,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CouchbaseEx.query/3` - Execute parameterized N1QL queries
 
 #### Subdocument Operations
-- `CouchbaseEx.lookup_in/3` - Perform subdocument lookups
-- `CouchbaseEx.mutate_in/3` - Perform subdocument mutations
+- `CouchbaseEx.lookup_in/3` - Perform subdocument lookups with full SDK integration
+- `CouchbaseEx.mutate_in/3` - Perform subdocument mutations with full SDK integration
+- Supported operations:
+  - **Lookup**: get, exists, get_count
+  - **Mutation**: replace, dict_add, dict_upsert/upsert, array_add_first, array_add_last, array_add_unique, array_insert, delete/remove, counter/increment
 
 #### Health and Diagnostics
 - `CouchbaseEx.ping/1` - Ping cluster services
@@ -63,13 +143,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Error Handling
 - Custom `CouchbaseEx.Error` struct with detailed error information
-- Error conversion from Zig server responses
-- Retry logic with exponential backoff
-- Comprehensive error types and messages
+- **Comprehensive error mapping** - All 40+ Couchbase SDK errors mapped to Elixir atoms
+- **Structured error responses** - Error code, message, and context from Zig server
+- **Smart error parsing** - Handles both structured and simple error formats
+- **Retry logic** - Exponential backoff with jitter (max 30s)
+- **Retryable detection** - Automatic detection of retryable vs permanent errors
+- **Error context** - Operation and key information included in error responses
+- **44 comprehensive error tests** - Full coverage of error handling scenarios
 
 #### Testing
-- Unit tests for all core functionality (73 tests)
-- Integration tests for Couchbase server operations (14 tests)
+- Unit tests for all core functionality (113 tests total)
+  - 69 core functionality tests
+  - 44 comprehensive error handling tests
+- Integration tests for Couchbase server operations (23 tests)
+  - 14 original integration tests
+  - 9 subdocument operation tests
 - Test organization with proper tagging
 - Mock support with Mox for unit testing
 - Test aliases for different test types
@@ -84,9 +172,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Zig Server
 - High-performance Couchbase operations in Zig
+- Full integration with couchbase-zig-client library
 - Command-line argument parsing for connection configuration
 - JSON message processing and response generation
 - Comprehensive error handling and reporting
+- Real Couchbase SDK operations for all CRUD, query, and subdocument operations
 
 #### Configuration Options
 - Connection string validation

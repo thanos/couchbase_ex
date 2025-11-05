@@ -93,9 +93,19 @@ defmodule CouchbaseEx.Client do
         {:error, reason} -> {:error, reason}
       end
     else
+      {:error, reason} when is_binary(reason) ->
+        # Check if this is a validation error (case-insensitive)
+        reason_lower = String.downcase(reason)
+        if String.contains?(reason_lower, "connection string") or
+           String.contains?(reason_lower, "username") or
+           String.contains?(reason_lower, "password") do
+          {:error, Error.new(:invalid_connection_params, reason)}
+        else
+          {:error, Error.new(:connection_failed, reason)}
+        end
+
       {:error, reason} ->
-        error_message = if is_binary(reason), do: reason, else: inspect(reason)
-        {:error, Error.new(:connection_failed, error_message)}
+        {:error, Error.new(:connection_failed, inspect(reason))}
     end
   end
 
@@ -533,8 +543,10 @@ defmodule CouchbaseEx.Client do
       is_nil(password) or password == "" ->
         {:error, "Password cannot be empty"}
 
-      not String.starts_with?(connection_string, "couchbase://") ->
-        {:error, "Invalid connection string format. Must start with 'couchbase://'"}
+      not (String.starts_with?(connection_string, "couchbase://") or
+             String.starts_with?(connection_string, "http://") or
+             String.starts_with?(connection_string, "https://")) ->
+        {:error, "Invalid connection string format. Must start with 'couchbase://', 'http://', or 'https://'"}
 
       true ->
         :ok
@@ -543,7 +555,10 @@ defmodule CouchbaseEx.Client do
 
   @spec send_command(t(), String.t(), map()) :: {:ok, any()} | {:error, Error.t()}
   defp send_command(client, command, params) do
+    require Logger
+
     if is_nil(client.port) do
+      Logger.error("Client.send_command called but client not connected")
       {:error, Error.new(:not_connected, "Client not connected to Couchbase")}
     else
       message = %{
@@ -552,10 +567,18 @@ defmodule CouchbaseEx.Client do
         timestamp: System.monotonic_time(:millisecond)
       }
 
+      Logger.debug("Client sending command '#{command}' with params: #{inspect(params)}")
+
       case PortManager.send_command(client.port, message) do
-        {:ok, %{"success" => true, "data" => data} } -> {:ok, data}
-        {:ok, %{"success" => false, "error" => error} } -> {:error, Error.from_map(error)}
-        {:error, reason} -> {:error, Error.new(:communication_failed, to_string(reason))}
+        {:ok, %{"success" => true, "data" => data} } ->
+          Logger.debug("Client received successful response for command '#{command}': #{inspect(data)}")
+          {:ok, data}
+        {:ok, %{"success" => false, "error" => error} } ->
+          Logger.error("Client received error response for command '#{command}': #{inspect(error)}")
+          {:error, Error.from_map(error)}
+        {:error, reason} ->
+          Logger.error("Client communication failed for command '#{command}': #{inspect(reason)}")
+          {:error, Error.new(:communication_failed, to_string(reason))}
       end
     end
   end
