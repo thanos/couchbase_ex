@@ -59,6 +59,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated connection string validation to accept `https://` for secure connections
   - Now accepts `couchbase://`, `http://`, and `https://` protocols
   - Enables secure HTTP connections to Couchbase clusters
+- Fixed error categorization in `connect_with_options/4`
+  - Validation errors now correctly return `:invalid_connection_params` reason
+  - Uses case-insensitive matching for validation error detection
+  - Improves error handling consistency
 
 ### Removed
 - Removed unused `skip_if_unavailable` macro from integration tests (tests use inline skip pattern instead)

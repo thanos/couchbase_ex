@@ -93,9 +93,19 @@ defmodule CouchbaseEx.Client do
         {:error, reason} -> {:error, reason}
       end
     else
+      {:error, reason} when is_binary(reason) ->
+        # Check if this is a validation error (case-insensitive)
+        reason_lower = String.downcase(reason)
+        if String.contains?(reason_lower, "connection string") or
+           String.contains?(reason_lower, "username") or
+           String.contains?(reason_lower, "password") do
+          {:error, Error.new(:invalid_connection_params, reason)}
+        else
+          {:error, Error.new(:connection_failed, reason)}
+        end
+
       {:error, reason} ->
-        error_message = if is_binary(reason), do: reason, else: inspect(reason)
-        {:error, Error.new(:connection_failed, error_message)}
+        {:error, Error.new(:connection_failed, inspect(reason))}
     end
   end
 
