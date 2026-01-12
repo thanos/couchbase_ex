@@ -53,6 +53,7 @@ defmodule CouchbaseEx.MixProject do
       name: "couchbase_ex",
       files: ~w(lib priv .formatter.exs mix.exs README.md LICENSE),
       licenses: ["Apache-2.0"],
+      maintainers: ["thanos vassilakis"],
       links: %{"GitHub" => "https://github.com/thanos/couchbase_ex"}
     ]
   end
